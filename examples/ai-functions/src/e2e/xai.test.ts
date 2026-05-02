@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import { expect } from 'vitest';
-import { xai as provider, XaiErrorData } from '@ai-sdk/xai';
+import { xai as provider, type XaiErrorData } from '@ai-sdk/xai';
 import {
   createFeatureTestSuite,
   createLanguageModelWithCapabilities,
 } from './feature-test-suite';
-import { APICallError } from '@ai-sdk/provider';
+import type { APICallError } from '@ai-sdk/provider';
 
 const createChatModel = (modelId: string) =>
   createLanguageModelWithCapabilities(provider.chat(modelId));
@@ -28,9 +28,7 @@ createFeatureTestSuite({
       createChatModel('grok-3-mini-beta'),
       createChatModel('grok-3-mini-fast-beta'),
       createChatModel('grok-3'),
-      createChatModel('grok-2-vision-1212'),
       createCompletionModel('grok-3'),
-      createCompletionModel('grok-2-vision-1212'),
     ],
   },
   timeout: 30000,

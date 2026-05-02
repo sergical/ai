@@ -1,7 +1,7 @@
 import {
   openai,
-  OpenAILanguageModelResponsesOptions,
-  OpenaiResponsesReasoningProviderMetadata,
+  type OpenAILanguageModelResponsesOptions,
+  type OpenaiResponsesReasoningProviderMetadata,
 } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { run } from '../../lib/run';
@@ -10,9 +10,9 @@ run(async () => {
   const result = streamText({
     model: openai('gpt-5'),
     prompt: 'How many "r"s are in the word "strawberry"?',
+    reasoning: 'low',
     providerOptions: {
       openai: {
-        reasoningEffort: 'low',
         reasoningSummary: 'detailed',
       } satisfies OpenAILanguageModelResponsesOptions,
     },

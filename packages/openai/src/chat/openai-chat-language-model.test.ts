@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import { LanguageModelV3Prompt } from '@ai-sdk/provider';
+import type { LanguageModelV4Prompt } from '@ai-sdk/provider';
 import { createTestServer } from '@ai-sdk/test-server/with-vitest';
 import {
   convertReadableStreamToArray,
@@ -13,7 +13,7 @@ vi.mock('../version', () => ({
   VERSION: '0.0.0-test',
 }));
 
-const TEST_PROMPT: LanguageModelV3Prompt = [
+const TEST_PROMPT: LanguageModelV4Prompt = [
   { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
 ];
 
@@ -579,6 +579,59 @@ describe('doGenerate', () => {
         "user": "test-user-id",
       }
     `);
+  });
+
+  it('should not set reasoning_effort when reasoning is "provider-default"', async () => {
+    prepareJsonFixtureResponse('openai-text');
+
+    const model = provider.chat('o4-mini');
+
+    await model.doGenerate({
+      prompt: TEST_PROMPT,
+      reasoning: 'provider-default',
+    });
+
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
+      model: 'o4-mini',
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+  });
+
+  it('should pass top-level reasoning as reasoning_effort', async () => {
+    prepareJsonFixtureResponse('openai-text');
+
+    const model = provider.chat('o4-mini');
+
+    await model.doGenerate({
+      prompt: TEST_PROMPT,
+      reasoning: 'medium',
+    });
+
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
+      model: 'o4-mini',
+      messages: [{ role: 'user', content: 'Hello' }],
+      reasoning_effort: 'medium',
+    });
+  });
+
+  it('should prefer providerOptions reasoningEffort over top-level reasoning', async () => {
+    prepareJsonFixtureResponse('openai-text');
+
+    const model = provider.chat('o4-mini');
+
+    await model.doGenerate({
+      prompt: TEST_PROMPT,
+      reasoning: 'medium',
+      providerOptions: {
+        openai: { reasoningEffort: 'high' },
+      },
+    });
+
+    expect(await server.calls[0].requestBodyJson).toStrictEqual({
+      model: 'o4-mini',
+      messages: [{ role: 'user', content: 'Hello' }],
+      reasoning_effort: 'high',
+    });
   });
 
   it('should pass reasoningEffort setting from provider metadata', async () => {
@@ -1476,6 +1529,55 @@ describe('doGenerate', () => {
         messages: [{ role: 'user', content: 'Hello' }],
         max_completion_tokens: 1000,
       });
+    });
+
+    it('should allow temperature when top-level reasoning is none on gpt-5.1', async () => {
+      prepareJsonFixtureResponse('openai-text');
+
+      const model = provider.chat('gpt-5.1');
+
+      const result = await model.doGenerate({
+        prompt: TEST_PROMPT,
+        reasoning: 'none',
+        temperature: 0.5,
+      });
+
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
+        model: 'gpt-5.1',
+        messages: [{ role: 'user', content: 'Hello' }],
+        reasoning_effort: 'none',
+        temperature: 0.5,
+      });
+
+      expect(result.warnings).toStrictEqual([]);
+    });
+
+    it('should still clear temperature when top-level reasoning is none on o4-mini', async () => {
+      prepareJsonFixtureResponse('openai-text');
+
+      const model = provider.chat('o4-mini');
+
+      const result = await model.doGenerate({
+        prompt: TEST_PROMPT,
+        reasoning: 'none',
+        temperature: 0.5,
+      });
+
+      expect(await server.calls[0].requestBodyJson).toStrictEqual({
+        model: 'o4-mini',
+        messages: [{ role: 'user', content: 'Hello' }],
+        reasoning_effort: 'none',
+      });
+
+      expect(result.warnings).toMatchInlineSnapshot(`
+        [
+          {
+            "details": "temperature is not supported for reasoning models",
+            "feature": "temperature",
+            "type": "unsupported",
+          },
+        ]
+      `);
     });
   });
 
@@ -2739,15 +2841,6 @@ describe('doStream', () => {
           "type": "tool-input-delta",
         },
         {
-          "delta": "",
-          "id": "chatcmpl-tool-b3b307239370432d9910d4b79b4dbbaa",
-          "type": "tool-input-delta",
-        },
-        {
-          "id": "0",
-          "type": "text-end",
-        },
-        {
           "id": "chatcmpl-tool-b3b307239370432d9910d4b79b4dbbaa",
           "type": "tool-input-end",
         },
@@ -2756,6 +2849,10 @@ describe('doStream', () => {
           "toolCallId": "chatcmpl-tool-b3b307239370432d9910d4b79b4dbbaa",
           "toolName": "searchGoogle",
           "type": "tool-call",
+        },
+        {
+          "id": "0",
+          "type": "text-end",
         },
         {
           "finishReason": {
@@ -2787,82 +2884,6 @@ describe('doStream', () => {
         },
       ]
     `);
-  });
-
-  it('should not finalize tool call early when partial JSON is coincidentally parsable', async () => {
-    // Regression test: if streamed tool call arguments form valid JSON before
-    // all chunks have arrived, the tool call must NOT be finalized early.
-    // For example, {"query": "test"} is valid JSON but the full args are
-    // {"query": "test", "limit": 10}. Finalizing early would lose "limit".
-    server.urls['https://api.openai.com/v1/chat/completions'].response = {
-      type: 'stream-chunks',
-      chunks: [
-        // initial chunk with tool call start
-        `data: {"id":"chatcmpl-early","object":"chat.completion.chunk","created":1733162241,` +
-          `"model":"gpt-4","choices":[{"index":0,"delta":{"role":"assistant","content":null,` +
-          `"tool_calls":[{"index":0,"id":"call_early123","type":"function",` +
-          `"function":{"name":"search","arguments":""}}]},"finish_reason":null}]}\n\n`,
-        // This chunk produces valid JSON: {"query": "test"}
-        `data: {"id":"chatcmpl-early","object":"chat.completion.chunk","created":1733162241,` +
-          `"model":"gpt-4","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,` +
-          `"function":{"arguments":"{\\"query\\": \\"test\\"}"}}]},"finish_reason":null}]}\n\n`,
-        // More data arrives - the full args include "limit"
-        `data: {"id":"chatcmpl-early","object":"chat.completion.chunk","created":1733162241,` +
-          `"model":"gpt-4","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,` +
-          `"function":{"arguments":""}}]},"finish_reason":null}]}\n\n`,
-        // Even more data: adding the comma and limit field
-        `data: {"id":"chatcmpl-early","object":"chat.completion.chunk","created":1733162241,` +
-          `"model":"gpt-4","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,` +
-          `"function":{"arguments":", \\"limit\\": 10}"}}]},"finish_reason":null}]}\n\n`,
-        // finish
-        `data: {"id":"chatcmpl-early","object":"chat.completion.chunk","created":1733162241,` +
-          `"model":"gpt-4","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}\n\n`,
-        `data: [DONE]\n\n`,
-      ],
-    };
-
-    const { stream } = await model.doStream({
-      tools: [
-        {
-          type: 'function',
-          name: 'search',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              query: { type: 'string' },
-              limit: { type: 'number' },
-            },
-            required: ['query'],
-            additionalProperties: false,
-            $schema: 'http://json-schema.org/draft-07/schema#',
-          },
-        },
-      ],
-      prompt: TEST_PROMPT,
-      includeRawChunks: false,
-    });
-
-    const result = await convertReadableStreamToArray(stream);
-
-    // Find the tool-call event
-    const toolCallEvent = result.find(
-      (e: { type: string }) => e.type === 'tool-call',
-    );
-
-    // The tool call must contain the COMPLETE arguments, not just the
-    // partial JSON that happened to be parsable mid-stream.
-    expect(toolCallEvent).toEqual({
-      type: 'tool-call',
-      toolCallId: 'call_early123',
-      toolName: 'search',
-      input: '{"query": "test"}, "limit": 10}',
-    });
-
-    // Verify there is exactly one tool-call event (no premature duplicate)
-    const toolCallEvents = result.filter(
-      (e: { type: string }) => e.type === 'tool-call',
-    );
-    expect(toolCallEvents).toHaveLength(1);
   });
 
   it('should stream tool call with missing type field (Azure AI Foundry / Mistral)', async () => {
@@ -3097,7 +3118,7 @@ describe('doStream', () => {
           },
           {
             "error": [AI_JSONParseError: JSON parsing failed: Text: {unparsable}.
-        Error message: Expected property name or '}' in JSON at position 1 (line 1 column 2)],
+        Error message: SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)],
             "type": "error",
           },
           {

@@ -1,54 +1,39 @@
-import {
+import type {
+  Arrayable,
+  Context,
   FlexibleSchema,
+  IdGenerator,
+  InferToolSetContext,
   MaybePromiseLike,
   ProviderOptions,
+  SensitiveContext,
   SystemModelMessage,
+  ToolSet,
 } from '@ai-sdk/provider-utils';
 import type {
-  OnFinishEvent,
-  OnStartEvent,
-  OnStepFinishEvent,
-  OnStepStartEvent,
-  OnToolCallFinishEvent,
-  OnToolCallStartEvent,
-} from '../generate-text/callback-events';
-import { Output } from '../generate-text/output';
-import { PrepareStepFunction } from '../generate-text/prepare-step';
-import { StopCondition } from '../generate-text/stop-condition';
-import { ToolCallRepairFunction } from '../generate-text/tool-call-repair-function';
-import { ToolSet } from '../generate-text/tool-set';
-import { CallSettings } from '../prompt/call-settings';
-import { Prompt } from '../prompt/prompt';
-import { TelemetrySettings } from '../telemetry/telemetry-settings';
-import { LanguageModel, ToolChoice } from '../types/language-model';
-import { DownloadFunction } from '../util/download/download-function';
-import { AgentCallParameters } from './agent';
-
-export type ToolLoopAgentOnStartCallback<
-  TOOLS extends ToolSet = ToolSet,
-  OUTPUT extends Output = Output,
-> = (event: OnStartEvent<TOOLS, OUTPUT>) => PromiseLike<void> | void;
-
-export type ToolLoopAgentOnStepStartCallback<
-  TOOLS extends ToolSet = ToolSet,
-  OUTPUT extends Output = Output,
-> = (event: OnStepStartEvent<TOOLS, OUTPUT>) => PromiseLike<void> | void;
-
-export type ToolLoopAgentOnToolCallStartCallback<
-  TOOLS extends ToolSet = ToolSet,
-> = (event: OnToolCallStartEvent<TOOLS>) => PromiseLike<void> | void;
-
-export type ToolLoopAgentOnToolCallFinishCallback<
-  TOOLS extends ToolSet = ToolSet,
-> = (event: OnToolCallFinishEvent<TOOLS>) => PromiseLike<void> | void;
-
-export type ToolLoopAgentOnStepFinishCallback<TOOLS extends ToolSet = {}> = (
-  stepResult: OnStepFinishEvent<TOOLS>,
-) => Promise<void> | void;
-
-export type ToolLoopAgentOnFinishCallback<TOOLS extends ToolSet = {}> = (
-  event: OnFinishEvent<TOOLS>,
-) => PromiseLike<void> | void;
+  GenerateTextOnFinishCallback,
+  GenerateTextOnStartCallback,
+  GenerateTextOnStepFinishCallback,
+  GenerateTextOnStepStartCallback,
+} from '../generate-text/generate-text-events';
+import type { ActiveTools } from '../generate-text/active-tools';
+import type { Output } from '../generate-text/output';
+import type { PrepareStepFunction } from '../generate-text/prepare-step';
+import type { StopCondition } from '../generate-text/stop-condition';
+import type { ToolApprovalConfiguration } from '../generate-text/tool-approval-configuration';
+import type { ToolCallRepairFunction } from '../generate-text/tool-call-repair-function';
+import type {
+  OnToolExecutionEndCallback,
+  OnToolExecutionStartCallback,
+} from '../generate-text/tool-execution-events';
+import type { ToolsContextParameter } from '../generate-text/tools-context-parameter';
+import type { LanguageModelCallOptions } from '../prompt/language-model-call-options';
+import type { Prompt } from '../prompt/prompt';
+import type { RequestOptions } from '../prompt/request-options';
+import type { TelemetryOptions } from '../telemetry/telemetry-options';
+import type { LanguageModel, ToolChoice } from '../types/language-model';
+import type { DownloadFunction } from '../util/download/download-function';
+import type { AgentCallParameters } from './agent';
 
 /**
  * Configuration options for an agent.
@@ -56,148 +41,220 @@ export type ToolLoopAgentOnFinishCallback<TOOLS extends ToolSet = {}> = (
 export type ToolLoopAgentSettings<
   CALL_OPTIONS = never,
   TOOLS extends ToolSet = {},
+  RUNTIME_CONTEXT extends Context = Context,
   OUTPUT extends Output = never,
-> = Omit<CallSettings, 'abortSignal'> & {
-  /**
-   * The id of the agent.
-   */
-  id?: string;
+> = LanguageModelCallOptions &
+  Omit<RequestOptions<TOOLS>, 'abortSignal'> &
+  ToolsContextParameter<TOOLS> & {
+    /**
+     * The id of the agent.
+     */
+    id?: string;
 
-  /**
-   * The instructions for the agent.
-   *
-   * It can be a string, or, if you need to pass additional provider options (e.g. for caching), a `SystemModelMessage`.
-   */
-  instructions?: string | SystemModelMessage | Array<SystemModelMessage>;
+    /**
+     * The instructions for the agent.
+     *
+     * It can be a string, or, if you need to pass additional provider options (e.g. for caching), a `SystemModelMessage`.
+     */
+    instructions?: string | SystemModelMessage | Array<SystemModelMessage>;
 
-  /**
-   * The language model to use.
-   */
-  model: LanguageModel;
+    /**
+     * The language model to use.
+     */
+    model: LanguageModel;
 
-  /**
-   * The tools that the model can call. The model needs to support calling tools.
-   */
-  tools?: TOOLS;
+    /**
+     * The tool choice strategy. Default: 'auto'.
+     */
+    toolChoice?: ToolChoice<NoInfer<TOOLS>>;
 
-  /**
-   * The tool choice strategy. Default: 'auto'.
-   */
-  toolChoice?: ToolChoice<NoInfer<TOOLS>>;
+    /**
+     * Condition for stopping the generation when there are tool results in the last step.
+     * When the condition is an array, any of the conditions can be met to stop the generation.
+     *
+     * @default isStepCount(20)
+     */
+    stopWhen?: Arrayable<StopCondition<NoInfer<TOOLS>, RUNTIME_CONTEXT>>;
 
-  /**
-   * Condition for stopping the generation when there are tool results in the last step.
-   * When the condition is an array, any of the conditions can be met to stop the generation.
-   *
-   * @default stepCountIs(20)
-   */
-  stopWhen?:
-    | StopCondition<NoInfer<TOOLS>>
-    | Array<StopCondition<NoInfer<TOOLS>>>;
+    /**
+     * Optional telemetry configuration.
+     */
+    telemetry?: TelemetryOptions;
 
-  /**
-   * Optional telemetry configuration (experimental).
-   */
-  experimental_telemetry?: TelemetrySettings;
+    /**
+     * Optional telemetry configuration.
+     *
+     * @deprecated Use `telemetry` instead. This alias will be removed in a future major release.
+     */
+    experimental_telemetry?: TelemetryOptions;
 
-  /**
-   * Limits the tools that are available for the model to call without
-   * changing the tool call and result types in the result.
-   */
-  activeTools?: Array<keyof NoInfer<TOOLS>>;
+    /**
+     * Limits the tools that are available for the model to call without
+     * changing the tool call and result types in the result.
+     */
+    activeTools?: ActiveTools<NoInfer<TOOLS>>;
 
-  /**
-   * Optional specification for generating structured outputs.
-   */
-  output?: OUTPUT;
+    /**
+     * Optional specification for generating structured outputs.
+     */
+    output?: OUTPUT;
 
-  /**
-   * Optional function that you can use to provide different settings for a step.
-   */
-  prepareStep?: PrepareStepFunction<NoInfer<TOOLS>>;
+    /**
+     * Runtime context. Treat runtime context as immutable.
+     * If you need to mutate runtime context, update it in `prepareStep`.
+     */
+    runtimeContext?: RUNTIME_CONTEXT;
 
-  /**
-   * A function that attempts to repair a tool call that failed to parse.
-   */
-  experimental_repairToolCall?: ToolCallRepairFunction<NoInfer<TOOLS>>;
+    /**
+     * Top-level runtime context properties that contain sensitive data and
+     * should be excluded from telemetry.
+     */
+    sensitiveRuntimeContext?: SensitiveContext<NoInfer<RUNTIME_CONTEXT>>;
 
-  /**
-   * Callback that is called when the agent operation begins, before any LLM calls.
-   */
-  experimental_onStart?: ToolLoopAgentOnStartCallback<NoInfer<TOOLS>, OUTPUT>;
+    /**
+     * Optional tool approval configuration.
+     *
+     * This configuration takes precedence over tool-defined approval settings.
+     */
+    toolApproval?: ToolApprovalConfiguration<NoInfer<TOOLS>, RUNTIME_CONTEXT>;
 
-  /**
-   * Callback that is called when a step (LLM call) begins, before the provider is called.
-   */
-  experimental_onStepStart?: ToolLoopAgentOnStepStartCallback<
-    NoInfer<TOOLS>,
-    OUTPUT
-  >;
+    /**
+     * Optional function that you can use to provide different settings for a step.
+     */
+    prepareStep?: PrepareStepFunction<NoInfer<TOOLS>, RUNTIME_CONTEXT>;
 
-  /**
-   * Callback that is called before each tool execution begins.
-   */
-  experimental_onToolCallStart?: ToolLoopAgentOnToolCallStartCallback<
-    NoInfer<TOOLS>
-  >;
+    /**
+     * A function that attempts to repair a tool call that failed to parse.
+     */
+    experimental_repairToolCall?: ToolCallRepairFunction<NoInfer<TOOLS>>;
 
-  /**
-   * Callback that is called after each tool execution completes.
-   */
-  experimental_onToolCallFinish?: ToolLoopAgentOnToolCallFinishCallback<
-    NoInfer<TOOLS>
-  >;
+    /**
+     * Callback that is called when the agent operation begins, before any LLM calls.
+     */
+    experimental_onStart?: GenerateTextOnStartCallback<
+      NoInfer<TOOLS>,
+      RUNTIME_CONTEXT,
+      NoInfer<OUTPUT>
+    >;
 
-  /**
-   * Callback that is called when each step (LLM call) is finished, including intermediate steps.
-   */
-  onStepFinish?: ToolLoopAgentOnStepFinishCallback<NoInfer<TOOLS>>;
+    /**
+     * Callback that is called when a step (LLM call) begins, before the provider is called.
+     */
+    experimental_onStepStart?: GenerateTextOnStepStartCallback<
+      NoInfer<TOOLS>,
+      NoInfer<RUNTIME_CONTEXT>,
+      NoInfer<OUTPUT>
+    >;
 
-  /**
-   * Callback that is called when all steps are finished and the response is complete.
-   */
-  onFinish?: ToolLoopAgentOnFinishCallback<NoInfer<TOOLS>>;
+    /**
+     * Callback that is called before each tool execution begins.
+     */
+    experimental_onToolExecutionStart?: OnToolExecutionStartCallback<
+      NoInfer<TOOLS>
+    >;
 
-  /**
-   * Additional provider-specific options. They are passed through
-   * to the provider from the AI SDK and enable provider-specific
-   * functionality that can be fully encapsulated in the provider.
-   */
-  providerOptions?: ProviderOptions;
+    /**
+     * Callback that is called after each tool execution completes.
+     */
+    experimental_onToolExecutionEnd?: OnToolExecutionEndCallback<
+      NoInfer<TOOLS>
+    >;
 
-  /**
-   * Context that is passed into tool calls.
-   *
-   * Experimental (can break in patch releases).
-   *
-   * @default undefined
-   */
-  experimental_context?: unknown;
+    /**
+     * Callback that is called when each step (LLM call) is finished, including intermediate steps.
+     */
+    onStepFinish?: GenerateTextOnStepFinishCallback<
+      NoInfer<TOOLS>,
+      NoInfer<RUNTIME_CONTEXT>
+    >;
 
-  /**
-   * Custom download function to use for URLs.
-   *
-   * By default, files are downloaded if the model does not support the URL for the given media type.
-   */
-  experimental_download?: DownloadFunction | undefined;
+    /**
+     * Callback that is called when all steps are finished and the response is complete.
+     */
+    onFinish?: GenerateTextOnFinishCallback<
+      NoInfer<TOOLS>,
+      NoInfer<RUNTIME_CONTEXT>
+    >;
 
-  /**
-   * The schema for the call options.
-   */
-  callOptionsSchema?: FlexibleSchema<CALL_OPTIONS>;
+    /**
+     * Additional provider-specific options. They are passed through
+     * to the provider from the AI SDK and enable provider-specific
+     * functionality that can be fully encapsulated in the provider.
+     */
+    providerOptions?: ProviderOptions;
 
-  /**
-   * Prepare the parameters for the generateText or streamText call.
-   *
-   * You can use this to have templates based on call options.
-   */
-  prepareCall?: (
-    options: Omit<
-      AgentCallParameters<CALL_OPTIONS, NoInfer<TOOLS>>,
-      'onStepFinish'
-    > &
+    /**
+     * Custom download function to use for URLs.
+     *
+     * By default, files are downloaded if the model does not support the URL for the given media type.
+     */
+    experimental_download?: DownloadFunction | undefined;
+
+    /**
+     * Internal. For test use only. May change without notice.
+     */
+    _internal?: {
+      generateId?: IdGenerator;
+      generateCallId?: IdGenerator;
+    };
+
+    /**
+     * The schema for the call options.
+     */
+    callOptionsSchema?: FlexibleSchema<CALL_OPTIONS>;
+
+    /**
+     * Prepare the parameters for the generateText or streamText call.
+     *
+     * You can use this to have templates based on call options.
+     */
+    prepareCall?: (
+      options: Omit<
+        AgentCallParameters<
+          CALL_OPTIONS,
+          NoInfer<TOOLS>,
+          NoInfer<RUNTIME_CONTEXT>
+        >,
+        'onStepFinish'
+      > &
+        Pick<
+          ToolLoopAgentSettings<
+            CALL_OPTIONS,
+            TOOLS,
+            RUNTIME_CONTEXT,
+            NoInfer<OUTPUT>
+          >,
+          | 'model'
+          | 'tools'
+          | 'maxOutputTokens'
+          | 'temperature'
+          | 'topP'
+          | 'topK'
+          | 'presencePenalty'
+          | 'frequencyPenalty'
+          | 'stopSequences'
+          | 'seed'
+          | 'headers'
+          | 'instructions'
+          | 'stopWhen'
+          | 'telemetry'
+          | 'experimental_telemetry'
+          | 'activeTools'
+          | 'toolApproval'
+          | 'providerOptions'
+          | 'experimental_download'
+          | 'runtimeContext'
+          | 'sensitiveRuntimeContext'
+          | '_internal'
+        > & { toolsContext: InferToolSetContext<TOOLS> },
+    ) => MaybePromiseLike<
       Pick<
-        ToolLoopAgentSettings<CALL_OPTIONS, TOOLS, OUTPUT>,
+        ToolLoopAgentSettings<
+          CALL_OPTIONS,
+          TOOLS,
+          RUNTIME_CONTEXT,
+          NoInfer<OUTPUT>
+        >,
         | 'model'
         | 'tools'
         | 'maxOutputTokens'
@@ -211,34 +268,18 @@ export type ToolLoopAgentSettings<
         | 'headers'
         | 'instructions'
         | 'stopWhen'
+        | 'telemetry'
         | 'experimental_telemetry'
         | 'activeTools'
+        | 'toolApproval'
         | 'providerOptions'
-        | 'experimental_context'
         | 'experimental_download'
-      >,
-  ) => MaybePromiseLike<
-    Pick<
-      ToolLoopAgentSettings<CALL_OPTIONS, TOOLS, OUTPUT>,
-      | 'model'
-      | 'tools'
-      | 'maxOutputTokens'
-      | 'temperature'
-      | 'topP'
-      | 'topK'
-      | 'presencePenalty'
-      | 'frequencyPenalty'
-      | 'stopSequences'
-      | 'seed'
-      | 'headers'
-      | 'instructions'
-      | 'stopWhen'
-      | 'experimental_telemetry'
-      | 'activeTools'
-      | 'providerOptions'
-      | 'experimental_context'
-      | 'experimental_download'
-    > &
-      Omit<Prompt, 'system'>
-  >;
-};
+        | 'runtimeContext'
+        | 'sensitiveRuntimeContext'
+        | '_internal'
+      > &
+        Omit<Prompt, 'system'> & {
+          toolsContext: InferToolSetContext<TOOLS>;
+        }
+    >;
+  };

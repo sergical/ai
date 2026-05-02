@@ -1,17 +1,17 @@
-import { type GoogleLanguageModelOptions } from '@ai-sdk/google';
-import { vertex } from '@ai-sdk/google-vertex';
+import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
+import { googleVertex } from '@ai-sdk/google-vertex';
 import { streamText } from 'ai';
 import { run } from '../../lib/run';
 
 run(async () => {
   const result = streamText({
-    model: vertex('gemini-2.5-flash'),
+    model: googleVertex('gemini-2.5-flash'),
     prompt:
       "Describe the most unusual or striking architectural feature you've ever seen in a building or structure.",
+    reasoning: 'medium',
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingBudget: 2048,
           includeThoughts: true,
         },
       } satisfies GoogleLanguageModelOptions,

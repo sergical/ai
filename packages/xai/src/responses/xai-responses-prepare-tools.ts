@@ -1,14 +1,14 @@
 import {
-  LanguageModelV3CallOptions,
-  SharedV3Warning,
   UnsupportedFunctionalityError,
+  type LanguageModelV4CallOptions,
+  type SharedV4Warning,
 } from '@ai-sdk/provider';
 import { validateTypes } from '@ai-sdk/provider-utils';
 import { fileSearchArgsSchema } from '../tool/file-search';
 import { mcpServerArgsSchema } from '../tool/mcp-server';
 import { webSearchArgsSchema } from '../tool/web-search';
 import { xSearchArgsSchema } from '../tool/x-search';
-import { XaiResponsesTool } from './xai-responses-api';
+import type { XaiResponsesTool } from './xai-responses-api';
 
 type XaiResponsesToolChoice =
   | 'auto'
@@ -20,16 +20,16 @@ export async function prepareResponsesTools({
   tools,
   toolChoice,
 }: {
-  tools: LanguageModelV3CallOptions['tools'];
-  toolChoice?: LanguageModelV3CallOptions['toolChoice'];
+  tools: LanguageModelV4CallOptions['tools'];
+  toolChoice?: LanguageModelV4CallOptions['toolChoice'];
 }): Promise<{
   tools: Array<XaiResponsesTool> | undefined;
   toolChoice: XaiResponsesToolChoice | undefined;
-  toolWarnings: SharedV3Warning[];
+  toolWarnings: SharedV4Warning[];
 }> {
   const normalizedTools = tools?.length ? tools : undefined;
 
-  const toolWarnings: SharedV3Warning[] = [];
+  const toolWarnings: SharedV4Warning[] = [];
 
   if (normalizedTools == null) {
     return { tools: undefined, toolChoice: undefined, toolWarnings };

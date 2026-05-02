@@ -1,8 +1,8 @@
-import {
+import type {
   openaiResponsesChunkSchema,
   OpenAIResponsesLogprobs,
 } from './openai-responses-api';
-import { InferSchema } from '@ai-sdk/provider-utils';
+import type { InferSchema } from '@ai-sdk/provider-utils';
 
 type OpenaiResponsesChunk = InferSchema<typeof openaiResponsesChunkSchema>;
 
@@ -28,6 +28,16 @@ export type OpenaiResponsesReasoningProviderMetadata = {
 
 export type OpenaiResponsesProviderMetadata = {
   openai: ResponsesProviderMetadata;
+};
+
+export type ResponsesCompactionProviderMetadata = {
+  type: 'compaction';
+  itemId: string;
+  encryptedContent?: string;
+};
+
+export type OpenaiResponsesCompactionProviderMetadata = {
+  openai: ResponsesCompactionProviderMetadata;
 };
 
 export type ResponsesTextProviderMetadata = {

@@ -3,13 +3,21 @@ import {
   OpenAICompatibleCompletionLanguageModel,
   OpenAICompatibleEmbeddingModel,
 } from '@ai-sdk/openai-compatible';
-import {
-  EmbeddingModelV3,
-  LanguageModelV3,
-  RerankingModelV3,
+import type {
+  EmbeddingModelV4,
+  LanguageModelV4,
+  RerankingModelV4,
 } from '@ai-sdk/provider';
 import { loadApiKey } from '@ai-sdk/provider-utils';
-import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from 'vitest';
 import { TogetherAIRerankingModel } from './reranking/togetherai-reranking-model';
 import { TogetherAIImageModel } from './togetherai-image-model';
 import { createTogetherAI } from './togetherai-provider';
@@ -44,21 +52,21 @@ vi.mock('./reranking/togetherai-reranking-model', () => ({
 describe('TogetherAIProvider', () => {
   const originalEnv = { ...process.env };
 
-  let mockLanguageModel: LanguageModelV3;
-  let mockEmbeddingModel: EmbeddingModelV3;
-  let mockRerankingModel: RerankingModelV3;
+  let mockLanguageModel: LanguageModelV4;
+  let mockEmbeddingModel: EmbeddingModelV4;
+  let mockRerankingModel: RerankingModelV4;
 
   beforeEach(() => {
     // Mock implementations of models
     mockLanguageModel = {
-      // Add any required methods for LanguageModelV3
-    } as LanguageModelV3;
+      // Add any required methods for LanguageModelV4
+    } as LanguageModelV4;
     mockEmbeddingModel = {
-      // Add any required methods for EmbeddingModelV3
-    } as EmbeddingModelV3;
+      // Add any required methods for EmbeddingModelV4
+    } as EmbeddingModelV4;
     mockRerankingModel = {
-      // Add any required methods for RerankingModelV3
-    } as RerankingModelV3;
+      // Add any required methods for RerankingModelV4
+    } as RerankingModelV4;
 
     vi.clearAllMocks();
     delete process.env.TOGETHER_API_KEY;

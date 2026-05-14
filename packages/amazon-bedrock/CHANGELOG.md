@@ -1,5 +1,108 @@
 # @ai-sdk/amazon-bedrock
 
+## 5.0.0-canary.61
+
+### Patch Changes
+
+- Updated dependencies [a7de9c9]
+  - @ai-sdk/provider-utils@5.0.0-canary.40
+  - @ai-sdk/anthropic@4.0.0-canary.54
+
+## 5.0.0-canary.60
+
+### Patch Changes
+
+- Updated dependencies [105f95b]
+  - @ai-sdk/provider-utils@5.0.0-canary.39
+  - @ai-sdk/anthropic@4.0.0-canary.53
+
+## 5.0.0-canary.59
+
+### Patch Changes
+
+- Updated dependencies [8018480]
+  - @ai-sdk/anthropic@4.0.0-canary.52
+
+## 5.0.0-canary.58
+
+### Patch Changes
+
+- bcbaae6: fix(bedrock): skip passing unsigned reasoning content
+
+## 5.0.0-canary.57
+
+### Patch Changes
+
+- Updated dependencies [ca446f8]
+  - @ai-sdk/provider-utils@5.0.0-canary.38
+  - @ai-sdk/anthropic@4.0.0-canary.51
+
+## 5.0.0-canary.56
+
+### Patch Changes
+
+- Updated dependencies [d848405]
+  - @ai-sdk/provider-utils@5.0.0-canary.37
+  - @ai-sdk/anthropic@4.0.0-canary.50
+
+## 5.0.0-canary.55
+
+### Patch Changes
+
+- Updated dependencies [ca39020]
+  - @ai-sdk/provider-utils@5.0.0-canary.36
+  - @ai-sdk/anthropic@4.0.0-canary.49
+
+## 5.0.0-canary.54
+
+### Patch Changes
+
+- 9c78e5d: fix (provider/amazon-bedrock): preserve cache points on message content parts
+
+## 5.0.0-canary.53
+
+### Patch Changes
+
+- Updated dependencies [f634bac]
+  - @ai-sdk/provider-utils@5.0.0-canary.35
+  - @ai-sdk/anthropic@4.0.0-canary.48
+
+## 5.0.0-canary.52
+
+### Patch Changes
+
+- Updated dependencies [2610e84]
+- Updated dependencies [69254e0]
+- Updated dependencies [3015fc3]
+  - @ai-sdk/anthropic@4.0.0-canary.47
+  - @ai-sdk/provider-utils@5.0.0-canary.34
+
+## 5.0.0-canary.51
+
+### Patch Changes
+
+- Updated dependencies [e5c4f40]
+  - @ai-sdk/anthropic@4.0.0-canary.46
+
+## 5.0.0-canary.50
+
+### Patch Changes
+
+- 68c5081: fix(provider/amazon-bedrock): mark `input` optional on tool-use schema so streaming `contentBlockStart` events parse under Zod >= 4.4.0
+- Updated dependencies [2427d88]
+  - @ai-sdk/provider-utils@5.0.0-canary.33
+  - @ai-sdk/anthropic@4.0.0-canary.45
+
+## 5.0.0-canary.49
+
+### Patch Changes
+
+- 5463d0d: feat(provider): align tool result output content file part types with top-level message file part types
+- Updated dependencies [5463d0d]
+  - @ai-sdk/provider-utils@5.0.0-canary.32
+  - @ai-sdk/provider@4.0.0-canary.16
+  - @ai-sdk/anthropic@4.0.0-canary.44
+
 ## 5.0.0-canary.48
 
 ### Patch Changes

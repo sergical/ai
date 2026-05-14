@@ -26,6 +26,7 @@ import {
 } from './anthropic-api';
 import { anthropicFilePartProviderOptions } from './anthropic-language-model-options';
 import { CacheControlValidator } from './get-cache-control';
+import { advisor_20260301OutputSchema } from './tool/advisor_20260301';
 import { codeExecution_20250522OutputSchema } from './tool/code-execution_20250522';
 import { codeExecution_20250825OutputSchema } from './tool/code-execution_20250825';
 import { codeExecution_20260120OutputSchema } from './tool/code-execution_20260120';
@@ -349,50 +350,73 @@ export async function convertToAnthropicPrompt({
                               type: 'text' as const,
                               text: contentPart.text,
                             };
-                          case 'file-url': {
-                            if (contentPart.mediaType.startsWith('image/')) {
-                              return {
-                                type: 'image' as const,
-                                source: {
-                                  type: 'url' as const,
-                                  url: contentPart.url,
-                                },
-                              };
-                            }
-                            return {
-                              type: 'document' as const,
-                              source: {
-                                type: 'url' as const,
-                                url: contentPart.url,
-                              },
-                            };
-                          }
-                          case 'file-data': {
-                            if (contentPart.mediaType.startsWith('image/')) {
-                              return {
-                                type: 'image' as const,
-                                source: {
-                                  type: 'base64' as const,
-                                  media_type: contentPart.mediaType,
-                                  data: contentPart.data,
-                                },
-                              };
-                            }
-                            if (contentPart.mediaType === 'application/pdf') {
-                              betas.add('pdfs-2024-09-25');
+                          case 'file': {
+                            const topLevel = getTopLevelMediaType(
+                              contentPart.mediaType,
+                            );
+
+                            if (contentPart.data.type === 'url') {
+                              if (topLevel === 'image') {
+                                return {
+                                  type: 'image' as const,
+                                  source: {
+                                    type: 'url' as const,
+                                    url: contentPart.data.url.toString(),
+                                  },
+                                };
+                              }
                               return {
                                 type: 'document' as const,
                                 source: {
-                                  type: 'base64' as const,
-                                  media_type: contentPart.mediaType,
-                                  data: contentPart.data,
+                                  type: 'url' as const,
+                                  url: contentPart.data.url.toString(),
                                 },
                               };
                             }
 
+                            if (contentPart.data.type === 'data') {
+                              if (topLevel === 'image') {
+                                return {
+                                  type: 'image' as const,
+                                  source: {
+                                    type: 'base64' as const,
+                                    media_type: resolveFullMediaType({
+                                      part: contentPart,
+                                    }),
+                                    data: convertToBase64(
+                                      contentPart.data.data,
+                                    ),
+                                  },
+                                };
+                              }
+                              if (
+                                resolveFullMediaType({ part: contentPart }) ===
+                                'application/pdf'
+                              ) {
+                                betas.add('pdfs-2024-09-25');
+                                return {
+                                  type: 'document' as const,
+                                  source: {
+                                    type: 'base64' as const,
+                                    media_type: 'application/pdf',
+                                    data: convertToBase64(
+                                      contentPart.data.data,
+                                    ),
+                                  },
+                                };
+                              }
+
+                              warnings.push({
+                                type: 'other',
+                                message: `unsupported tool content part type: ${contentPart.type} with media type: ${contentPart.mediaType}`,
+                              });
+
+                              return undefined;
+                            }
+
                             warnings.push({
                               type: 'other',
-                              message: `unsupported tool content part type: ${contentPart.type} with media type: ${contentPart.mediaType}`,
+                              message: `unsupported tool content part type: ${contentPart.type} with data type: ${contentPart.data.type}`,
                             });
 
                             return undefined;
@@ -417,7 +441,7 @@ export async function convertToAnthropicPrompt({
                           default: {
                             warnings.push({
                               type: 'other',
-                              message: `unsupported tool content part type: ${contentPart.type}`,
+                              message: `unsupported tool content part type: ${(contentPart as { type: string }).type}`,
                             });
 
                             return undefined;
@@ -673,6 +697,15 @@ export async function convertToAnthropicPrompt({
                         id: part.toolCallId,
                         name: providerToolName,
                         input: part.input,
+                        cache_control: cacheControl,
+                      });
+                    } else if (providerToolName === 'advisor') {
+                      // The advisor server_tool_use.input is always {}.
+                      anthropicContent.push({
+                        type: 'server_tool_use',
+                        id: part.toolCallId,
+                        name: 'advisor',
+                        input: {},
                         cache_control: cacheControl,
                       });
                     } else {
@@ -1057,6 +1090,58 @@ export async function convertToAnthropicPrompt({
                     },
                     cache_control: cacheControl,
                   });
+
+                  break;
+                }
+
+                if (providerToolName === 'advisor') {
+                  const output = part.output;
+
+                  if (output.type !== 'json' && output.type !== 'error-json') {
+                    warnings.push({
+                      type: 'other',
+                      message: `provider executed tool result output type ${output.type} for tool ${part.toolName} is not supported`,
+                    });
+
+                    break;
+                  }
+
+                  const advisorOutput = await validateTypes({
+                    value: output.value,
+                    schema: advisor_20260301OutputSchema,
+                  });
+
+                  if (advisorOutput.type === 'advisor_result') {
+                    anthropicContent.push({
+                      type: 'advisor_tool_result',
+                      tool_use_id: part.toolCallId,
+                      content: {
+                        type: 'advisor_result',
+                        text: advisorOutput.text,
+                      },
+                      cache_control: cacheControl,
+                    });
+                  } else if (advisorOutput.type === 'advisor_redacted_result') {
+                    anthropicContent.push({
+                      type: 'advisor_tool_result',
+                      tool_use_id: part.toolCallId,
+                      content: {
+                        type: 'advisor_redacted_result',
+                        encrypted_content: advisorOutput.encryptedContent,
+                      },
+                      cache_control: cacheControl,
+                    });
+                  } else {
+                    anthropicContent.push({
+                      type: 'advisor_tool_result',
+                      tool_use_id: part.toolCallId,
+                      content: {
+                        type: 'advisor_tool_result_error',
+                        error_code: advisorOutput.errorCode,
+                      },
+                      cache_control: cacheControl,
+                    });
+                  }
 
                   break;
                 }

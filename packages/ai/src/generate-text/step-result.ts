@@ -34,14 +34,67 @@ import type {
 } from './tool-result';
 
 /**
+ * Timing statistics for the gaps between generated output chunks.
+ */
+export type OutputChunkTimingStats = {
+  /** Shortest observed time between output chunks in milliseconds. */
+  readonly min: number;
+
+  /** 10th percentile time between output chunks in milliseconds. */
+  readonly p10: number;
+
+  /** Median time between output chunks in milliseconds. */
+  readonly median: number;
+
+  /** Average time between output chunks in milliseconds. */
+  readonly avg: number;
+
+  /** 90th percentile time between output chunks in milliseconds. */
+  readonly p90: number;
+
+  /** Longest observed time between output chunks in milliseconds. */
+  readonly max: number;
+};
+
+/**
  * Performance metrics for a single step in the generation process.
  */
 export type StepResultPerformance = {
   /**
-   * Average number of output tokens per second during the language model
+   * Effective number of output tokens per second over the full language model
    * response.
+   *
+   * Calculated as `outputTokens / requestSeconds`.
    */
-  readonly tokensPerSecond: number;
+  readonly effectiveOutputTokensPerSecond: number;
+
+  /**
+   * Number of output tokens per second after the first generated output chunk
+   * was received.
+   *
+   * Only available for streaming steps.
+   *
+   * Calculated as `outputTokens / outputStreamSeconds`.
+   */
+  readonly outputTokensPerSecond: number | undefined;
+
+  /**
+   * Number of input tokens processed per second before the first generated
+   * output chunk was received.
+   *
+   * Only available for streaming steps.
+   *
+   * Calculated as `inputTokens / ttftSeconds`.
+   */
+  readonly inputTokensPerSecond: number | undefined;
+
+  /**
+   * Effective number of input and output tokens per second over the full
+   * language model response.
+   *
+   * Calculated as `(inputTokens + outputTokens) / requestSeconds`.
+   */
+  readonly effectiveTotalTokensPerSecond: number;
 
   /**
    * Total time spent on the step in milliseconds.
@@ -60,12 +113,23 @@ export type StepResultPerformance = {
   readonly toolExecutionMs: Readonly<Record<string, number>>;
 
   /**
-   * Time until the first text, reasoning, or tool input delta was received in
-   * milliseconds.
+   * Time until the first generated output chunk was received in milliseconds.
+   *
+   * This includes text deltas, reasoning deltas, generated files, reasoning
+   * files, tool input deltas, and tool calls.
    *
    * Only available for streaming steps.
    */
-  readonly timeToFirstTokenMs: number | undefined;
+  readonly timeToFirstOutputMs: number | undefined;
+
+  /**
+   * Timing statistics for the gaps between generated output chunks in
+   * milliseconds.
+   *
+   * Only available for streaming steps with at least two generated output
+   * chunks.
+   */
+  readonly timeBetweenOutputChunksMs?: OutputChunkTimingStats;
 };
 
 /**

@@ -1,5 +1,188 @@
 # @ai-sdk/otel
 
+## 1.0.0-canary.109
+
+### Patch Changes
+
+- Updated dependencies [ee798eb]
+- Updated dependencies [c907622]
+  - ai@7.0.0-canary.163
+
+## 1.0.0-canary.108
+
+### Patch Changes
+
+- ai@7.0.0-canary.162
+
+## 1.0.0-canary.107
+
+### Patch Changes
+
+- ai@7.0.0-canary.161
+
+## 1.0.0-canary.106
+
+### Patch Changes
+
+- ai@7.0.0-canary.160
+
+## 1.0.0-canary.105
+
+### Patch Changes
+
+- Updated dependencies [b5092f5]
+  - ai@7.0.0-canary.159
+
+## 1.0.0-canary.104
+
+### Patch Changes
+
+- Updated dependencies [bcce2dd]
+  - ai@7.0.0-canary.158
+
+## 1.0.0-canary.103
+
+### Patch Changes
+
+- ai@7.0.0-canary.157
+
+## 1.0.0-canary.102
+
+### Patch Changes
+
+- 1e200eb: fix(otel): ensure nested context object creates separate attribute
+- e92fc45: feat(ai): introduce onAbort hook to close telemetry spans
+- Updated dependencies [023550e]
+- Updated dependencies [e92fc45]
+  - ai@7.0.0-canary.156
+
+## 1.0.0-canary.101
+
+### Patch Changes
+
+- Updated dependencies [e67d80e]
+- Updated dependencies [6cca112]
+- Updated dependencies [82fc0ab]
+- Updated dependencies [76fd58c]
+  - ai@7.0.0-canary.155
+
+## 1.0.0-canary.100
+
+### Patch Changes
+
+- 594029e: feat(ai): wrap the model call in telemetry context
+- Updated dependencies [594029e]
+  - ai@7.0.0-canary.154
+
+## 1.0.0-canary.99
+
+### Patch Changes
+
+- Updated dependencies [6c93e36]
+  - ai@7.0.0-canary.153
+
+## 1.0.0-canary.98
+
+### Patch Changes
+
+- ai@7.0.0-canary.152
+
+## 1.0.0-canary.97
+
+### Patch Changes
+
+- ai@7.0.0-canary.151
+
+## 1.0.0-canary.96
+
+### Patch Changes
+
+- ai@7.0.0-canary.150
+
+## 1.0.0-canary.95
+
+### Patch Changes
+
+- Updated dependencies [e3d9c0e]
+  - ai@7.0.0-canary.149
+
+## 1.0.0-canary.94
+
+### Patch Changes
+
+- Updated dependencies [2852a84]
+  - ai@7.0.0-canary.148
+
+## 1.0.0-canary.93
+
+### Patch Changes
+
+- ai@7.0.0-canary.147
+
+## 1.0.0-canary.92
+
+### Patch Changes
+
+- ai@7.0.0-canary.146
+
+## 1.0.0-canary.91
+
+### Patch Changes
+
+- ai@7.0.0-canary.145
+
+## 1.0.0-canary.90
+
+### Patch Changes
+
+- 7fc6bd6: Raise minimum supported Node.js version to 22. Supported versions: 22, 24, and 26.
+- Updated dependencies [7fc6bd6]
+  - ai@7.0.0-canary.144
+  - @ai-sdk/provider@4.0.0-canary.17
+
+## 1.0.0-canary.89
+
+### Patch Changes
+
+- Updated dependencies [a6617c5]
+  - ai@7.0.0-canary.143
+
+## 1.0.0-canary.88
+
+### Patch Changes
+
+- Updated dependencies [62d6481]
+  - ai@7.0.0-canary.142
+
+## 1.0.0-canary.87
+
+### Patch Changes
+
+- Updated dependencies [e3a0419]
+  - ai@7.0.0-canary.141
+
+## 1.0.0-canary.86
+
+### Patch Changes
+
+- ai@7.0.0-canary.140
+
+## 1.0.0-canary.85
+
+### Patch Changes
+
+- 334ae5d: Update step performance metrics with explicit effective, input, output, and total token throughput fields.
+- Updated dependencies [334ae5d]
+- Updated dependencies [28dfa06]
+- Updated dependencies [e93fa91]
+  - ai@7.0.0-canary.139
+
+## 1.0.0-canary.84
+
+### Patch Changes
+
+- ai@7.0.0-canary.138
+
 ## 1.0.0-canary.83
 
 ### Patch Changes

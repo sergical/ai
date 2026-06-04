@@ -5,6 +5,7 @@ import type { LanguageModelUsage } from '../types/usage';
 import type { ContentPart } from './content-part';
 import type { StandardizedPrompt } from '../prompt/standardize-prompt';
 import type { LanguageModelCallOptions } from '../prompt';
+import type { OutputChunkTimingStats } from './step-result';
 
 /**
  * Common model information used across callback events.
@@ -59,14 +60,47 @@ export type LanguageModelCallEndEvent<TOOLS extends ToolSet = ToolSet> =
       /** Time spent waiting for the language model response in milliseconds. */
       readonly responseTimeMs: number;
 
-      /** Average number of output tokens per second during the model response. */
-      readonly tokensPerSecond: number;
+      /**
+       * Effective number of output tokens per second over the full language
+       * model response.
+       */
+      readonly effectiveOutputTokensPerSecond: number;
 
       /**
-       * Time until the first text, reasoning, or tool input delta was received
-       * in milliseconds.
+       * Number of output tokens per second after the first generated output
+       * chunk was received.
+       *
+       * Only available for streaming calls.
        */
-      readonly timeToFirstTokenMs: number | undefined;
+      readonly outputTokensPerSecond: number | undefined;
+
+      /**
+       * Number of input tokens processed per second before the first generated
+       * output chunk was received.
+       *
+       * Only available for streaming calls.
+       */
+      readonly inputTokensPerSecond: number | undefined;
+
+      /**
+       * Effective number of input and output tokens per second over the full
+       * language model response.
+       */
+      readonly effectiveTotalTokensPerSecond: number;
+
+      /**
+       * Time until the first generated output chunk was received in
+       * milliseconds.
+       */
+      readonly timeToFirstOutputMs: number | undefined;
+
+      /**
+       * Timing statistics for the gaps between generated output chunks in
+       * milliseconds.
+       *
+       * Only available for streaming calls with at least two output chunks.
+       */
+      readonly timeBetweenOutputChunksMs?: OutputChunkTimingStats;
     };
   };
 

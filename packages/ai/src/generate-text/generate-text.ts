@@ -10,7 +10,7 @@ import {
   withUserAgentSuffix,
   type Arrayable,
   type Context,
-  type Experimental_Sandbox as Sandbox,
+  type Experimental_SandboxSession as SandboxSession,
   type IdGenerator,
   type InferToolSetContext,
   type ProviderOptions,
@@ -67,7 +67,7 @@ import {
   type ActiveToolSubset,
 } from './filter-active-tools';
 import type {
-  GenerateTextOnFinishCallback,
+  GenerateTextOnEndCallback,
   GenerateTextOnStartCallback,
   GenerateTextOnStepFinishCallback,
   GenerateTextOnStepStartCallback,
@@ -96,6 +96,7 @@ import {
   isStopConditionMet,
   type StopCondition,
 } from './stop-condition';
+import { sumTokenCounts } from './sum-token-counts';
 import { toResponseMessages } from './to-response-messages';
 import type { ToolApprovalConfiguration } from './tool-approval-configuration';
 import type { ToolApprovalRequestOutput } from './tool-approval-request-output';
@@ -108,6 +109,7 @@ import type {
   OnToolExecutionStartCallback,
 } from './tool-execution-events';
 import type { ToolInputRefinement } from './tool-input-refinement';
+import type { ToolOrder } from './tool-order';
 import type { ToolOutput } from './tool-output';
 import type { TypedToolResult } from './tool-result';
 import type { ToolsContextParameter } from './tools-context-parameter';
@@ -156,6 +158,7 @@ export type GenerateTextInclude = {
  *
  * @param tools - Tools that are accessible to and can be called by the model. The model needs to support calling tools.
  * @param toolChoice - The tool choice strategy. Default: 'auto'.
+ * @param toolOrder - Controls the order in which tools are sent to the provider. Tools not listed are appended alphabetically.
  *
  * @param system - A system message that will be part of the prompt.
  * @param prompt - A simple text prompt. You can either use `prompt` or `messages` but not both.
@@ -201,7 +204,8 @@ export type GenerateTextInclude = {
  * Uses a discriminated union: check `success` to determine if `output` or `error` is present.
  * @param experimental_onToolCallFinish - Deprecated alias for `onToolExecutionEnd`.
  * @param onStepFinish - Callback that is called when each step (LLM call) is finished, including intermediate steps.
- * @param onFinish - Callback that is called when all steps are finished and the response is complete.
+ * @param onEnd - Callback that is called when all steps are finished and the response is complete.
+ * @param onFinish - Deprecated alias for `onEnd`.
  *
  * @returns
  * A result object that contains the generated text, the results of the tool calls, and additional information.
@@ -231,6 +235,7 @@ export async function generateText<
   telemetry = experimental_telemetry,
   providerOptions,
   activeTools,
+  toolOrder,
   prepareStep,
   experimental_repairToolCall: repairToolCall,
   experimental_refineToolInput: refineToolInput,
@@ -254,6 +259,7 @@ export async function generateText<
   experimental_onToolCallFinish,
   onStepFinish,
   onFinish,
+  onEnd = onFinish,
   ...settings
 }: LanguageModelCallOptions &
   RequestOptions<TOOLS> &
@@ -299,7 +305,7 @@ export async function generateText<
     /**
      * The sandbox environment that is passed through to tool execution.
      */
-    experimental_sandbox?: Sandbox;
+    experimental_sandbox?: SandboxSession;
 
     /**
      * Runtime context. Treat runtime context as immutable.
@@ -312,6 +318,15 @@ export async function generateText<
      * changing the tool call and result types in the result.
      */
     activeTools?: ActiveTools<NoInfer<TOOLS>>;
+
+    /**
+     * Controls the order in which tools are sent to the provider.
+     *
+     * The list can be partial. Tools not listed in `toolOrder` are sent after
+     * the listed tools, sorted alphabetically. This can improve provider-side
+     * caching by keeping tool definitions in a stable order.
+     */
+    toolOrder?: ToolOrder<NoInfer<TOOLS>>;
 
     /**
      * Optional specification for parsing structured outputs from the LLM response.
@@ -418,7 +433,14 @@ export async function generateText<
     /**
      * Callback that is called when all steps are finished and the response is complete.
      */
-    onFinish?: GenerateTextOnFinishCallback<
+    onEnd?: GenerateTextOnEndCallback<NoInfer<TOOLS>, NoInfer<RUNTIME_CONTEXT>>;
+
+    /**
+     * Callback that is called when all steps are finished and the response is complete.
+     *
+     * @deprecated Use `onEnd` instead.
+     */
+    onFinish?: GenerateTextOnEndCallback<
       NoInfer<TOOLS>,
       NoInfer<RUNTIME_CONTEXT>
     >;
@@ -516,6 +538,7 @@ export async function generateText<
       tools,
       toolChoice,
       activeTools,
+      toolOrder,
       maxOutputTokens: callSettings.maxOutputTokens,
       temperature: callSettings.temperature,
       topP: callSettings.topP,
@@ -706,9 +729,13 @@ export async function generateText<
           tools,
           activeTools: prepareStepResult?.activeTools ?? activeTools,
         });
+        const stepToolOrder = prepareStepResult?.toolOrder ?? toolOrder;
 
         const stepTools = await prepareTools({
           tools: stepActiveTools,
+          toolOrder: stepToolOrder as ToolOrder<
+            ActiveToolSubset<TOOLS, ActiveTools<NoInfer<TOOLS>>>
+          >,
           // active tools context is a subset of the tools context, so we can cast to the unknown type
           toolsContext: toolsContext as unknown as InferToolSetContext<
             ActiveToolSubset<TOOLS, ActiveTools<NoInfer<TOOLS>>>
@@ -739,6 +766,7 @@ export async function generateText<
             tools,
             toolChoice: prepareStepResult?.toolChoice ?? toolChoice,
             activeTools: prepareStepResult?.activeTools ?? activeTools,
+            toolOrder: stepToolOrder,
             steps: [...steps],
             providerOptions: stepProviderOptions,
             output,
@@ -771,16 +799,25 @@ export async function generateText<
 
         const stepStartTimestampMs = now();
 
+        const executeLanguageModelCallInTelemetryContext =
+          telemetryDispatcher.executeLanguageModelCall ??
+          (async <T>({ execute }: { execute: () => PromiseLike<T> }) =>
+            await execute());
+
         currentModelResponse = await retry(async () => {
-          const result = await stepModel.doGenerate({
-            ...callSettings,
-            tools: stepTools,
-            toolChoice: stepToolChoice,
-            responseFormat: await output?.responseFormat,
-            prompt: promptMessages,
-            providerOptions: stepProviderOptions,
-            abortSignal: mergedAbortSignal,
-            headers: headersWithUserAgent,
+          const result = await executeLanguageModelCallInTelemetryContext({
+            callId,
+            execute: async () =>
+              await stepModel.doGenerate({
+                ...callSettings,
+                tools: stepTools,
+                toolChoice: stepToolChoice,
+                responseFormat: await output?.responseFormat,
+                prompt: promptMessages,
+                providerOptions: stepProviderOptions,
+                abortSignal: mergedAbortSignal,
+                headers: headersWithUserAgent,
+              }),
           });
 
           const responseData = {
@@ -844,11 +881,20 @@ export async function generateText<
             responseId: currentModelResponse.response.id,
             performance: {
               responseTimeMs,
-              tokensPerSecond: calculateTokensPerSecond({
-                outputTokens: stepUsage.outputTokens,
-                responseTimeMs,
+              effectiveOutputTokensPerSecond: calculateTokensPerSecond({
+                tokens: stepUsage.outputTokens,
+                durationMs: responseTimeMs,
               }),
-              timeToFirstTokenMs: undefined,
+              outputTokensPerSecond: undefined,
+              inputTokensPerSecond: undefined,
+              effectiveTotalTokensPerSecond: calculateTokensPerSecond({
+                tokens: sumTokenCounts(
+                  stepUsage.inputTokens,
+                  stepUsage.outputTokens,
+                ),
+                durationMs: responseTimeMs,
+              }),
+              timeToFirstOutputMs: undefined,
             },
           },
           callbacks: [
@@ -1016,14 +1062,23 @@ export async function generateText<
 
         const stepTimeMs = now() - stepStartTimestampMs;
         const stepPerformance: StepResultPerformance = {
-          tokensPerSecond: calculateTokensPerSecond({
-            outputTokens: stepUsage.outputTokens,
-            responseTimeMs,
+          effectiveOutputTokensPerSecond: calculateTokensPerSecond({
+            tokens: stepUsage.outputTokens,
+            durationMs: responseTimeMs,
+          }),
+          outputTokensPerSecond: undefined,
+          inputTokensPerSecond: undefined,
+          effectiveTotalTokensPerSecond: calculateTokensPerSecond({
+            tokens: sumTokenCounts(
+              stepUsage.inputTokens,
+              stepUsage.outputTokens,
+            ),
+            durationMs: responseTimeMs,
           }),
           stepTimeMs,
           responseTimeMs,
           toolExecutionMs,
-          timeToFirstTokenMs: undefined,
+          timeToFirstOutputMs: undefined,
         };
 
         // Track provider-executed tool calls that support deferred results.
@@ -1166,44 +1221,52 @@ export async function generateText<
     );
 
     const files = steps.flatMap(step => step.files);
+    const sources = steps.flatMap(step => step.sources);
+    const toolCalls = steps.flatMap(step => step.toolCalls);
+    const staticToolCalls = steps.flatMap(step => step.staticToolCalls);
+    const dynamicToolCalls = steps.flatMap(step => step.dynamicToolCalls);
+    const toolResults = steps.flatMap(step => step.toolResults);
+    const staticToolResults = steps.flatMap(step => step.staticToolResults);
+    const dynamicToolResults = steps.flatMap(step => step.dynamicToolResults);
     const warnings = steps.flatMap(step => step.warnings ?? []);
 
-    const onFinishEvent = {
+    const onEndEvent = {
       callId,
       stepNumber: lastStep.stepNumber,
       model: lastStep.model,
       runtimeContext: lastStep.runtimeContext,
       finishReason: lastStep.finishReason,
       rawFinishReason: lastStep.rawFinishReason,
-      usage: lastStep.usage,
-      content: lastStep.content,
+      usage: totalUsage,
+      totalUsage,
+      content: steps.flatMap(step => step.content),
       text: lastStep.text,
-      reasoningText: lastStep.reasoningText,
       reasoning: lastStep.reasoning,
+      reasoningText: lastStep.reasoningText,
       files,
-      sources: lastStep.sources,
-      toolCalls: lastStep.toolCalls,
-      staticToolCalls: lastStep.staticToolCalls,
-      dynamicToolCalls: lastStep.dynamicToolCalls,
-      toolResults: lastStep.toolResults,
-      staticToolResults: lastStep.staticToolResults,
-      dynamicToolResults: lastStep.dynamicToolResults,
-      request: lastStep.request,
-      response: lastStep.response,
+      sources,
+      toolCalls,
+      staticToolCalls,
+      dynamicToolCalls,
+      toolResults,
+      staticToolResults,
+      dynamicToolResults,
       responseMessages: [
         ...initialResponseMessages,
         ...steps.flatMap(step => step.response.messages),
       ],
       warnings,
+      request: lastStep.request,
+      response: lastStep.response,
       providerMetadata: lastStep.providerMetadata,
       steps,
-      totalUsage,
+      finalStep: lastStep,
       toolsContext,
     };
 
     await notify({
-      event: onFinishEvent,
-      callbacks: [onFinish, telemetryDispatcher.onEnd],
+      event: onEndEvent,
+      callbacks: [onEnd, telemetryDispatcher.onEnd],
     });
 
     // parse output only if the last step was finished with "stop":
@@ -1251,7 +1314,7 @@ async function executeTools<TOOLS extends ToolSet>({
   messages: ModelMessage[];
   abortSignal: AbortSignal | undefined;
   timeout?: TimeoutConfiguration<TOOLS>;
-  experimental_sandbox?: Sandbox;
+  experimental_sandbox?: SandboxSession;
   toolsContext: InferToolSetContext<TOOLS>;
   onToolExecutionStart?: OnToolExecutionStartCallback<TOOLS>;
   onToolExecutionEnd?: OnToolExecutionEndCallback<TOOLS>;

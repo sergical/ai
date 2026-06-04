@@ -1,5 +1,79 @@
 # @ai-sdk/xai
 
+## 4.0.0-canary.70
+
+### Patch Changes
+
+- Updated dependencies [ee798eb]
+- Updated dependencies [daf6637]
+  - @ai-sdk/provider-utils@5.0.0-canary.45
+  - @ai-sdk/openai-compatible@3.0.0-canary.53
+
+## 4.0.0-canary.69
+
+### Patch Changes
+
+- 23f9d72: deprecate searchParameters (xai live search) in favor of web_search/x_search agent tools
+- 1dbecd7: feat(provider/xai): add `enableImageSearch` to the xAI Web Search tool
+
+  The xAI Responses API supports `enable_image_search` on Web Search tools. `xai.tools.webSearch()` now accepts `enableImageSearch` and sends it through to the API as `enable_image_search`.
+
+## 4.0.0-canary.68
+
+### Patch Changes
+
+- Updated dependencies [6c93e36]
+- Updated dependencies [f617ac2]
+  - @ai-sdk/provider-utils@5.0.0-canary.44
+  - @ai-sdk/openai-compatible@3.0.0-canary.52
+
+## 4.0.0-canary.67
+
+### Patch Changes
+
+- Updated dependencies [9f1e1ba]
+  - @ai-sdk/openai-compatible@3.0.0-canary.51
+
+## 4.0.0-canary.66
+
+### Patch Changes
+
+- 7fc6bd6: Raise minimum supported Node.js version to 22. Supported versions: 22, 24, and 26.
+- Updated dependencies [7fc6bd6]
+  - @ai-sdk/openai-compatible@3.0.0-canary.50
+  - @ai-sdk/provider-utils@5.0.0-canary.43
+  - @ai-sdk/provider@4.0.0-canary.17
+
+## 4.0.0-canary.65
+
+### Patch Changes
+
+- Updated dependencies [a6617c5]
+  - @ai-sdk/provider-utils@5.0.0-canary.42
+  - @ai-sdk/openai-compatible@3.0.0-canary.49
+
+## 4.0.0-canary.64
+
+### Patch Changes
+
+- 2dc2a52: fix reasoning-start dedupe on multi-summary-part responses to prevent xai 400 on continuation requests
+- 1293885: surface full xai error detail in APICallError.message instead of falling back to http status text
+
+## 4.0.0-canary.63
+
+### Patch Changes
+
+- Updated dependencies [28dfa06]
+- Updated dependencies [e93fa91]
+  - @ai-sdk/provider-utils@5.0.0-canary.41
+  - @ai-sdk/openai-compatible@3.0.0-canary.48
+
+## 4.0.0-canary.62
+
+### Patch Changes
+
+- 85735d8: fix(xai): stop emitting additionalProperties flag
+
 ## 4.0.0-canary.61
 
 ### Patch Changes

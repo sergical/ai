@@ -1,7 +1,7 @@
 import type {
   Arrayable,
   Context,
-  Experimental_Sandbox as Sandbox,
+  Experimental_SandboxSession as SandboxSession,
   Tool,
   ToolSet,
 } from '@ai-sdk/provider-utils';
@@ -11,6 +11,7 @@ import type { StreamTextTransform } from '../generate-text/stream-text';
 import type { UIMessageStreamOptions } from '../generate-text/stream-text-result';
 import type { TimeoutConfiguration } from '../prompt/request-options';
 import type { InferUIMessageChunk } from '../ui-message-stream';
+import { toUIMessageStream } from '../ui-message-stream/to-ui-message-stream';
 import { convertToModelMessages } from '../ui/convert-to-model-messages';
 import type {
   InferUIMessageTools,
@@ -18,7 +19,10 @@ import type {
   UIMessage,
 } from '../ui/ui-messages';
 import { validateUIMessages } from '../ui/validate-ui-messages';
-import type { AsyncIterableStream } from '../util/async-iterable-stream';
+import {
+  createAsyncIterableStream,
+  type AsyncIterableStream,
+} from '../util/async-iterable-stream';
 import type { Agent } from './agent';
 
 /**
@@ -41,6 +45,8 @@ export async function createAgentUIStream<
   RUNTIME_CONTEXT extends Context = Context,
   OUTPUT extends Output = never,
   MESSAGE_METADATA = unknown,
+  UI_MESSAGE extends UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>> =
+    UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>,
 >({
   agent,
   uiMessages,
@@ -56,35 +62,22 @@ export async function createAgentUIStream<
   uiMessages: unknown[];
   abortSignal?: AbortSignal;
   timeout?: TimeoutConfiguration<TOOLS>;
-  experimental_sandbox?: Sandbox;
+  experimental_sandbox?: SandboxSession;
   options?: CALL_OPTIONS;
   experimental_transform?: Arrayable<StreamTextTransform<TOOLS>>;
   onStepFinish?: GenerateTextOnStepFinishCallback<TOOLS>;
   // TODO `originalMessages` is part of this for bc, omit in v7
-} & UIMessageStreamOptions<
-  UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>
->): Promise<
-  AsyncIterableStream<
-    InferUIMessageChunk<UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>>
-  >
+} & UIMessageStreamOptions<UI_MESSAGE>): Promise<
+  AsyncIterableStream<InferUIMessageChunk<UI_MESSAGE>>
 > {
-  const validatedMessages = await validateUIMessages<
-    UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>
-  >({
+  const validatedMessages = await validateUIMessages<UI_MESSAGE>({
     messages: uiMessages,
     // tools are compatible; the casting is required because the context param is
     // not available in ui messages
     tools: agent.tools as unknown as {
-      [NAME in keyof InferUIMessageTools<
-        UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>
-      > &
-        string]?: Tool<
-        InferUIMessageTools<
-          UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>
-        >[NAME]['input'],
-        InferUIMessageTools<
-          UIMessage<MESSAGE_METADATA, never, InferUITools<TOOLS>>
-        >[NAME]['output']
+      [NAME in keyof InferUIMessageTools<UI_MESSAGE> & string]?: Tool<
+        InferUIMessageTools<UI_MESSAGE>[NAME]['input'],
+        InferUIMessageTools<UI_MESSAGE>[NAME]['output']
       >;
     },
   });
@@ -103,10 +96,16 @@ export async function createAgentUIStream<
     onStepFinish,
   });
 
-  return result.toUIMessageStream({
-    ...uiMessageStreamOptions,
-    // TODO reading `originalMessages` is here for bc, always use `validatedMessages` in v7
-    originalMessages:
-      uiMessageStreamOptions.originalMessages ?? validatedMessages,
-  });
+  // TODO reading `originalMessages` is here for bc, always use `validatedMessages` in v7
+  const originalMessages =
+    uiMessageStreamOptions.originalMessages ?? validatedMessages;
+
+  return createAsyncIterableStream(
+    toUIMessageStream({
+      ...uiMessageStreamOptions,
+      originalMessages,
+      stream: result.stream,
+      tools: agent.tools,
+    }),
+  );
 }

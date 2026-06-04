@@ -1,5 +1,25 @@
 # @ai-sdk/devtools
 
+## 1.0.0-canary.26
+
+### Patch Changes
+
+- 7fc6bd6: Raise minimum supported Node.js version to 22. Supported versions: 22, 24, and 26.
+- Updated dependencies [7fc6bd6]
+  - @ai-sdk/provider@4.0.0-canary.17
+
+## 1.0.0-canary.25
+
+### Patch Changes
+
+- b567a6c: dependency updates
+
+## 1.0.0-canary.24
+
+### Patch Changes
+
+- ee7bb67: fix(devtools): add pointer cursor to DevTools buttons
+
 ## 1.0.0-canary.23
 
 ### Patch Changes

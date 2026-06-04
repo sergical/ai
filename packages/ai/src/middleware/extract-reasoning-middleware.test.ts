@@ -24,17 +24,20 @@ const testUsage: LanguageModelV4Usage = {
   },
 };
 
-function normalizeFullStreamPerformance(parts: Array<TextStreamPart<any>>) {
+function normalizeStreamPerformance(parts: Array<TextStreamPart<any>>) {
   return parts.map(part =>
     part.type === 'finish-step'
       ? {
           ...part,
           performance: {
+            effectiveOutputTokensPerSecond: 0,
+            outputTokensPerSecond: 0,
+            inputTokensPerSecond: 0,
+            effectiveTotalTokensPerSecond: 0,
             responseTimeMs: 0,
             stepTimeMs: 0,
-            timeToFirstTokenMs: 0,
+            timeToFirstOutputMs: 0,
             toolExecutionMs: {},
-            tokensPerSecond: 0,
           },
         }
       : part,
@@ -304,8 +307,8 @@ describe('extractReasoningMiddleware', () => {
       });
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(result.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(result.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -363,10 +366,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -455,8 +461,8 @@ describe('extractReasoningMiddleware', () => {
       });
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(result.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(result.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -524,10 +530,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -614,8 +623,8 @@ describe('extractReasoningMiddleware', () => {
       });
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(result.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(result.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -662,10 +671,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -763,8 +775,8 @@ describe('extractReasoningMiddleware', () => {
       });
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(resultTrue.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(resultTrue.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -817,10 +829,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -871,8 +886,8 @@ describe('extractReasoningMiddleware', () => {
       `);
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(resultFalse.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(resultFalse.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -923,10 +938,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -1010,8 +1028,8 @@ describe('extractReasoningMiddleware', () => {
       });
 
       expect(
-        normalizeFullStreamPerformance(
-          await convertAsyncIterableToArray(result.fullStream),
+        normalizeStreamPerformance(
+          await convertAsyncIterableToArray(result.stream),
         ),
       ).toMatchInlineSnapshot(`
         [
@@ -1043,10 +1061,13 @@ describe('extractReasoningMiddleware', () => {
           {
             "finishReason": "stop",
             "performance": {
+              "effectiveOutputTokensPerSecond": 0,
+              "effectiveTotalTokensPerSecond": 0,
+              "inputTokensPerSecond": 0,
+              "outputTokensPerSecond": 0,
               "responseTimeMs": 0,
               "stepTimeMs": 0,
-              "timeToFirstTokenMs": 0,
-              "tokensPerSecond": 0,
+              "timeToFirstOutputMs": 0,
               "toolExecutionMs": {},
             },
             "providerMetadata": undefined,
@@ -1130,13 +1151,13 @@ describe('extractReasoningMiddleware', () => {
         prompt: 'Test prompt',
       });
 
-      const fullStream = await convertAsyncIterableToArray(result.fullStream);
+      const stream = await convertAsyncIterableToArray(result.stream);
 
       // Find the reasoning events
-      const reasoningStartIndex = fullStream.findIndex(
+      const reasoningStartIndex = stream.findIndex(
         part => part.type === 'reasoning-start' && part.id === 'reasoning-0',
       );
-      const reasoningEndIndex = fullStream.findIndex(
+      const reasoningEndIndex = stream.findIndex(
         part => part.type === 'reasoning-end' && part.id === 'reasoning-0',
       );
 

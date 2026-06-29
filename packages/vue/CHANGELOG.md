@@ -1,5 +1,229 @@
 # @ai-sdk/vue
 
+## 4.0.4
+
+### Patch Changes
+
+- Updated dependencies [6a436e3]
+  - @ai-sdk/provider-utils@5.0.1
+  - ai@7.0.4
+
+## 4.0.3
+
+### Patch Changes
+
+- ai@7.0.3
+
+## 4.0.2
+
+### Patch Changes
+
+- ai@7.0.2
+
+## 4.0.1
+
+### Patch Changes
+
+- ai@7.0.1
+
+## 4.0.0
+
+### Major Changes
+
+- ef992f8: Remove CommonJS exports from all packages. All packages are now ESM-only (`"type": "module"`). Consumers using `require()` must switch to ESM `import` syntax.
+- 8359612: Start v7 pre-release
+
+### Patch Changes
+
+- b567a6c: dependency updates
+- 9f0e36c: trigger release for all packages after provenance setup
+- 7fc6bd6: Raise minimum supported Node.js version to 22. Supported versions: 22, 24, and 26.
+- 0c4c275: trigger initial canary release
+- 258c093: chore: ensure consistent import handling and avoid import duplicates or cycles
+- b8396f0: trigger initial beta release
+- e2525c8: fix(vue): forward args in useChat methods
+- d984051: Add `useChat` composable for `@ai-sdk/vue`, providing a reactive wrapper around `Chat` with auto-recreation when the init object changes.
+
+## 4.0.0-beta.187
+
+### Patch Changes
+
+- ai@7.0.0-beta.187
+
+## 4.0.0-beta.186
+
+### Patch Changes
+
+- ai@7.0.0-beta.186
+
+## 4.0.0-beta.185
+
+### Patch Changes
+
+- Updated dependencies [75763b0]
+  - ai@7.0.0-beta.185
+
+## 4.0.0-beta.184
+
+### Patch Changes
+
+- Updated dependencies [0416e3e]
+  - ai@7.0.0-beta.184
+  - @ai-sdk/provider-utils@5.0.0-beta.50
+
+## 4.0.0-beta.183
+
+### Patch Changes
+
+- ai@7.0.0-beta.183
+
+## 4.0.0-beta.182
+
+### Patch Changes
+
+- Updated dependencies [cc6ab90]
+  - ai@7.0.0-beta.182
+
+## 4.0.0-beta.181
+
+### Patch Changes
+
+- Updated dependencies [6a2caf9]
+  - ai@7.0.0-beta.181
+
+## 4.0.0-beta.180
+
+### Patch Changes
+
+- Updated dependencies [81a284b]
+  - ai@7.0.0-beta.180
+
+## 4.0.0-beta.179
+
+### Patch Changes
+
+- ai@7.0.0-beta.179
+
+## 4.0.0-beta.178
+
+### Patch Changes
+
+- Updated dependencies [b097c52]
+  - ai@7.0.0-beta.178
+
+## 4.0.0-beta.177
+
+### Patch Changes
+
+- b8396f0: trigger initial beta release
+- Updated dependencies [b8396f0]
+  - @ai-sdk/provider-utils@5.0.0-beta.49
+  - ai@7.0.0-beta.177
+
+## 4.0.0-canary.176
+
+### Patch Changes
+
+- ai@7.0.0-canary.176
+
+## 4.0.0-canary.175
+
+### Patch Changes
+
+- Updated dependencies [6ec57f5]
+  - ai@7.0.0-canary.175
+
+## 4.0.0-canary.174
+
+### Patch Changes
+
+- ai@7.0.0-canary.174
+
+## 4.0.0-canary.173
+
+### Patch Changes
+
+- ai@7.0.0-canary.173
+
+## 4.0.0-canary.172
+
+### Patch Changes
+
+- Updated dependencies [aeda373]
+- Updated dependencies [25a64f8]
+- Updated dependencies [375fdd7]
+- Updated dependencies [f18b08f]
+- Updated dependencies [b4507d5]
+  - @ai-sdk/provider-utils@5.0.0-canary.48
+  - ai@7.0.0-canary.172
+
+## 4.0.0-canary.171
+
+### Patch Changes
+
+- Updated dependencies [89ad56f]
+- Updated dependencies [f9a496f]
+- Updated dependencies [3295831]
+  - ai@7.0.0-canary.171
+
+## 4.0.0-canary.170
+
+### Patch Changes
+
+- Updated dependencies [bae5e2b]
+- Updated dependencies [69d7128]
+  - ai@7.0.0-canary.170
+  - @ai-sdk/provider-utils@5.0.0-canary.47
+
+## 4.0.0-canary.169
+
+### Patch Changes
+
+- Updated dependencies [a5018ab]
+- Updated dependencies [21d3d60]
+- Updated dependencies [426dbbb]
+- Updated dependencies [7fd3360]
+  - ai@7.0.0-canary.169
+
+## 4.0.0-canary.168
+
+### Patch Changes
+
+- Updated dependencies [1e4b350]
+  - ai@7.0.0-canary.168
+
+## 4.0.0-canary.167
+
+### Patch Changes
+
+- Updated dependencies [4757690]
+- Updated dependencies [eeefc3f]
+- Updated dependencies [b79b6a8]
+  - ai@7.0.0-canary.167
+
+## 4.0.0-canary.166
+
+### Patch Changes
+
+- Updated dependencies [19736ee]
+- Updated dependencies [d66ae02]
+- Updated dependencies [e4182bd]
+  - ai@7.0.0-canary.166
+
+## 4.0.0-canary.165
+
+### Patch Changes
+
+- Updated dependencies [ce769dd]
+  - ai@7.0.0-canary.165
+  - @ai-sdk/provider-utils@5.0.0-canary.46
+
+## 4.0.0-canary.164
+
+### Patch Changes
+
+- ai@7.0.0-canary.164
+
 ## 4.0.0-canary.163
 
 ### Patch Changes

@@ -12,6 +12,7 @@ import type { ActiveTools } from '../generate-text/active-tools';
 import type {
   GenerateTextOnEndCallback,
   GenerateTextOnStartCallback,
+  GenerateTextOnStepEndCallback,
   GenerateTextOnStepFinishCallback,
   GenerateTextOnStepStartCallback,
 } from '../generate-text/generate-text-events';
@@ -154,6 +155,17 @@ export type ToolLoopAgentSettings<
     /**
      * Callback that is called when the agent operation begins, before any LLM calls.
      */
+    onStart?: GenerateTextOnStartCallback<
+      NoInfer<TOOLS>,
+      RUNTIME_CONTEXT,
+      NoInfer<OUTPUT>
+    >;
+
+    /**
+     * Callback that is called when the agent operation begins, before any LLM calls.
+     *
+     * @deprecated Use `onStart` instead.
+     */
     experimental_onStart?: GenerateTextOnStartCallback<
       NoInfer<TOOLS>,
       RUNTIME_CONTEXT,
@@ -162,6 +174,17 @@ export type ToolLoopAgentSettings<
 
     /**
      * Callback that is called when a step (LLM call) begins, before the provider is called.
+     */
+    onStepStart?: GenerateTextOnStepStartCallback<
+      NoInfer<TOOLS>,
+      NoInfer<RUNTIME_CONTEXT>,
+      NoInfer<OUTPUT>
+    >;
+
+    /**
+     * Callback that is called when a step (LLM call) begins, before the provider is called.
+     *
+     * @deprecated Use `onStepStart` instead.
      */
     experimental_onStepStart?: GenerateTextOnStepStartCallback<
       NoInfer<TOOLS>,
@@ -180,7 +203,17 @@ export type ToolLoopAgentSettings<
     onToolExecutionEnd?: OnToolExecutionEndCallback<NoInfer<TOOLS>>;
 
     /**
-     * Callback that is called when each step (LLM call) is finished, including intermediate steps.
+     * Callback that is called when each step (LLM call) ends, including intermediate steps.
+     */
+    onStepEnd?: GenerateTextOnStepEndCallback<
+      NoInfer<TOOLS>,
+      NoInfer<RUNTIME_CONTEXT>
+    >;
+
+    /**
+     * Callback that is called when each step (LLM call) ends, including intermediate steps.
+     *
+     * @deprecated Use `onStepEnd` instead.
      */
     onStepFinish?: GenerateTextOnStepFinishCallback<
       NoInfer<TOOLS>,
@@ -261,7 +294,7 @@ export type ToolLoopAgentSettings<
           NoInfer<TOOLS>,
           NoInfer<RUNTIME_CONTEXT>
         >,
-        'onStepFinish'
+        'onStepEnd' | 'onStepFinish'
       > &
         Pick<
           ToolLoopAgentSettings<

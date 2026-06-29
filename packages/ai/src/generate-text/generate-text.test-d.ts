@@ -375,19 +375,19 @@ describe('generateText types', () => {
         telemetry: {
           includeRuntimeContext: { userId: true },
         },
-        experimental_onStart: ({ runtimeContext }) => {
+        onStart: ({ runtimeContext }) => {
           expectTypeOf(runtimeContext).toEqualTypeOf<{
             userId: string;
             requestId: string;
           }>();
         },
-        experimental_onStepStart: ({ runtimeContext }) => {
+        onStepStart: ({ runtimeContext }) => {
           expectTypeOf(runtimeContext).toEqualTypeOf<{
             userId: string;
             requestId: string;
           }>();
         },
-        onStepFinish: ({ runtimeContext }) => {
+        onStepEnd: ({ runtimeContext }) => {
           expectTypeOf(runtimeContext).toEqualTypeOf<{
             userId: string;
             requestId: string;

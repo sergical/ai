@@ -137,7 +137,7 @@ export type GenerateTextStepStartEvent<
 } & StandardizedPrompt;
 
 /**
- * Event passed to the `onStepFinish` callback.
+ * Event passed to the `onStepEnd` callback.
  *
  * Called when a step (LLM call) completes.
  * Includes the StepResult for that step along with the call identifier.
@@ -339,7 +339,7 @@ export type OnFinishEvent<
 > = GenerateTextEndEvent<TOOLS, RUNTIME_CONTEXT>;
 
 /**
- * Callback that is set using the `experimental_onStart` option.
+ * Callback that is set using the `onStart` option.
  *
  * Called when the generateText operation begins, before any LLM calls.
  * Use this callback for logging, analytics, or initializing state at the
@@ -354,7 +354,7 @@ export type GenerateTextOnStartCallback<
 > = Callback<GenerateTextStartEvent<TOOLS, RUNTIME_CONTEXT, OUTPUT>>;
 
 /**
- * Callback that is set using the `experimental_onStepStart` option.
+ * Callback that is set using the `onStepStart` option.
  *
  * Called when a step (LLM call) begins, before the provider is called.
  * Each step represents a single LLM invocation. Multiple steps occur when
@@ -369,17 +369,27 @@ export type GenerateTextOnStepStartCallback<
 > = Callback<GenerateTextStepStartEvent<TOOLS, RUNTIME_CONTEXT, OUTPUT>>;
 
 /**
- * Callback that is set using the `onStepFinish` option.
+ * Callback that is set using the `onStepEnd` option.
  *
  * Called when a step (LLM call) completes. The event includes all step result
  * properties (text, tool calls, usage, etc.) along with additional metadata.
  *
  * @param stepResult - The result of the step.
  */
-export type GenerateTextOnStepFinishCallback<
+export type GenerateTextOnStepEndCallback<
   TOOLS extends ToolSet = ToolSet,
   RUNTIME_CONTEXT extends Context = Context,
 > = Callback<GenerateTextStepEndEvent<TOOLS, RUNTIME_CONTEXT>>;
+
+/**
+ * Callback that is set using the `onStepFinish` option.
+ *
+ * @deprecated Use `GenerateTextOnStepEndCallback` instead.
+ */
+export type GenerateTextOnStepFinishCallback<
+  TOOLS extends ToolSet = ToolSet,
+  RUNTIME_CONTEXT extends Context = Context,
+> = GenerateTextOnStepEndCallback<TOOLS, RUNTIME_CONTEXT>;
 
 /**
  * Callback that is set using the `onEnd` option.

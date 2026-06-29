@@ -591,7 +591,9 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
                 {
                   "abortSignal": undefined,
                   "frequencyPenalty": undefined,
-                  "headers": undefined,
+                  "headers": {
+                    "user-agent": "ai-sdk-agent/workflow",
+                  },
                   "includeRawChunks": false,
                   "maxOutputTokens": 500,
                   "presencePenalty": undefined,
@@ -762,7 +764,9 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
                 {
                   "abortSignal": undefined,
                   "frequencyPenalty": undefined,
-                  "headers": undefined,
+                  "headers": {
+                    "user-agent": "ai-sdk-agent/workflow",
+                  },
                   "includeRawChunks": false,
                   "maxOutputTokens": undefined,
                   "presencePenalty": undefined,
@@ -810,6 +814,68 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
             "toolsContext": {},
           }
         `);
+      });
+    });
+  });
+
+  describe('onStepEnd', () => {
+    describe('stream', () => {
+      let mockModel: MockLanguageModelV4;
+
+      beforeEach(() => {
+        mockModel = new MockLanguageModelV4({
+          doStream: async () => createSimpleStreamResponse(),
+        });
+      });
+
+      it('should call onStepEnd from constructor and stream method in correct order', async () => {
+        const onStepEndCalls: string[] = [];
+
+        const agent = new WorkflowAgent({
+          model: mockModel,
+          onStepEnd: async () => {
+            onStepEndCalls.push('constructor');
+          },
+        });
+
+        const { writable } = createMockWritable();
+        await agent.stream({
+          messages: [{ role: 'user' as const, content: 'Hello, world!' }],
+          writable,
+          onStepEnd: async () => {
+            onStepEndCalls.push('method');
+          },
+        });
+
+        expect(onStepEndCalls).toEqual(['constructor', 'method']);
+      });
+
+      it('should prefer onStepEnd over deprecated onStepFinish', async () => {
+        const calls: string[] = [];
+
+        const agent = new WorkflowAgent({
+          model: mockModel,
+          onStepEnd: async () => {
+            calls.push('constructor-onStepEnd');
+          },
+          onStepFinish: async () => {
+            calls.push('constructor-onStepFinish');
+          },
+        });
+
+        const { writable } = createMockWritable();
+        await agent.stream({
+          messages: [{ role: 'user' as const, content: 'Hello, world!' }],
+          writable,
+          onStepEnd: async () => {
+            calls.push('method-onStepEnd');
+          },
+          onStepFinish: async () => {
+            calls.push('method-onStepFinish');
+          },
+        });
+
+        expect(calls).toEqual(['constructor-onStepEnd', 'method-onStepEnd']);
       });
     });
   });
@@ -1371,8 +1437,8 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
               onToolExecutionEnd: async () => {
                 events.push('onToolExecutionEnd');
               },
-              onStepFinish: async () => {
-                events.push('onStepFinish');
+              onStepEnd: async () => {
+                events.push('onStepEnd');
               },
               onEnd: async () => {
                 events.push('onEnd');
@@ -1392,9 +1458,9 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
           'onStepStart',
           'onToolExecutionStart',
           'onToolExecutionEnd',
-          'onStepFinish',
+          'onStepEnd',
           'onStepStart',
-          'onStepFinish',
+          'onStepEnd',
           'onEnd',
         ]);
       });
@@ -1485,8 +1551,8 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
             onStart: async () => {
               events.push('global-onStart');
             },
-            onStepFinish: async () => {
-              events.push('global-onStepFinish');
+            onStepEnd: async () => {
+              events.push('global-onStepEnd');
             },
             onEnd: async () => {
               events.push('global-onEnd');
@@ -1522,7 +1588,7 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
 
         expect(events).toEqual([
           'global-onStart',
-          'global-onStepFinish',
+          'global-onStepEnd',
           'global-onEnd',
         ]);
       });
@@ -1562,8 +1628,8 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
               onStart: async () => {
                 events.push('integration-onStart');
               },
-              onStepFinish: async () => {
-                events.push('integration-onStepFinish');
+              onStepEnd: async () => {
+                events.push('integration-onStepEnd');
               },
               onEnd: async () => {
                 events.push('integration-onEnd');
@@ -1582,7 +1648,7 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
           'agent-onStart',
           'integration-onStart',
           'agent-onStepFinish',
-          'integration-onStepFinish',
+          'integration-onStepEnd',
           'agent-onFinish',
           'integration-onEnd',
         ]);
@@ -1612,7 +1678,7 @@ describe('WorkflowAgent (ToolLoopAgent compat)', () => {
               onStart: async () => {
                 throw new Error('integration error');
               },
-              onStepFinish: async () => {
+              onStepEnd: async () => {
                 throw new Error('integration error');
               },
               onEnd: async () => {
